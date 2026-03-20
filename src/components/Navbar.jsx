@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Menu, X, Home, TrendingUp, Wallet, User, LogOut, 
-  CreditCard, LayoutDashboard 
+  CreditCard, LayoutDashboard, MessageCircle 
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -12,32 +12,42 @@ const Navbar = ({ isAuthenticated }) => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
-    const navLinks = isAuthenticated ? [
+  const navLinks = isAuthenticated ? [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/market', label: 'Market', icon: TrendingUp }, // Add this line
+    { path: '/market', label: 'Market', icon: TrendingUp },
     { path: '/invest', label: 'Invest', icon: TrendingUp },
     { path: '/withdraw', label: 'Withdraw', icon: Wallet },
     { path: '/profile', label: 'Profile', icon: User },
-    ] : [
+
+    // ✅ Support (Telegram)
+    { 
+      path: 'https://t.me/your_username?text=Hello%20I%20need%20support', 
+      label: 'Support', 
+      icon: MessageCircle, 
+      external: true 
+    },
+
+  ] : [
     { path: '/', label: 'Home', icon: Home },
-    { path: '/market', label: 'Market', icon: TrendingUp }, // Add this line
+    { path: '/market', label: 'Market', icon: TrendingUp },
     { path: '/login', label: 'Login', icon: User },
     { path: '/register', label: 'Register', icon: CreditCard },
-    ];
 
-  // Example logout function
+    // ✅ Support (Telegram)
+    { 
+      path: 'https://t.me/your_username?text=Hello%20I%20need%20support', 
+      label: 'Support', 
+      icon: MessageCircle, 
+      external: true 
+    },
+  ];
+
   const handleLogout = async () => {
     try {
-      // Clear token from localStorage
       localStorage.removeItem("token");
-
-      // Show success message
       toast.success("Logout successful");
-
-      // Redirect to login or home page
       navigate("/login");
     } catch (error) {
-      // Fallback in case logout fails
       toast.error(error.response?.data?.message || "Logout failed");
     }
   };
@@ -56,6 +66,22 @@ const Navbar = ({ isAuthenticated }) => {
             <div className="flex items-center space-x-8">
               {navLinks.map((link) => {
                 const Icon = link.icon;
+
+                if (link.external) {
+                  return (
+                    <a
+                      key={link.path}
+                      href={link.path}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-1 text-sm font-medium text-gray-600 hover:text-blue-600"
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span>{link.label}</span>
+                    </a>
+                  );
+                }
+
                 return (
                   <Link
                     key={link.path}
@@ -70,9 +96,12 @@ const Navbar = ({ isAuthenticated }) => {
                   </Link>
                 );
               })}
+
               {isAuthenticated && (
-                <button className="flex items-center space-x-1 text-sm font-medium text-gray-600 hover:text-red-600 transition-colors"
-                onClick={handleLogout}>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-1 text-sm font-medium text-gray-600 hover:text-red-600 transition-colors"
+                >
                   <LogOut className="w-4 h-4" />
                   <span>Logout</span>
                 </button>
@@ -102,6 +131,23 @@ const Navbar = ({ isAuthenticated }) => {
             <div className="px-4 py-2 space-y-2">
               {navLinks.map((link) => {
                 const Icon = link.icon;
+
+                if (link.external) {
+                  return (
+                    <a
+                      key={link.path}
+                      href={link.path}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50"
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="font-medium">{link.label}</span>
+                    </a>
+                  );
+                }
+
                 return (
                   <Link
                     key={link.path}
@@ -117,8 +163,12 @@ const Navbar = ({ isAuthenticated }) => {
                   </Link>
                 );
               })}
+
               {isAuthenticated && (
-                <button className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 text-red-600">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 text-red-600"
+                >
                   <LogOut className="w-5 h-5" />
                   <span className="font-medium">Logout</span>
                 </button>
@@ -134,6 +184,22 @@ const Navbar = ({ isAuthenticated }) => {
           <div className="flex justify-around items-center py-2">
             {navLinks.map((link) => {
               const Icon = link.icon;
+
+              if (link.external) {
+                return (
+                  <a
+                    key={link.path}
+                    href={link.path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center p-2 text-gray-600"
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="text-xs mt-1">{link.label}</span>
+                  </a>
+                );
+              }
+
               return (
                 <Link
                   key={link.path}
