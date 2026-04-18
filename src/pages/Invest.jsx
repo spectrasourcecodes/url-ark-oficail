@@ -18,14 +18,20 @@ import {
   ChevronRight,
   Sparkles,
   ArrowUpRight,
-  History
+  History,
+  Star,
+  Rocket,
+  Target,
+  Crown,
+  Users  // ← Add Users here
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
+// ... rest of your component code remains the same
+
 const Invest = () => {
   const [selectedAsset, setSelectedAsset] = useState('BTC');
-  const [investmentAmount, setInvestmentAmount] = useState('');
-  const [selectedPeriod, setSelectedPeriod] = useState('30');
+  const [selectedPlanId, setSelectedPlanId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -43,9 +49,7 @@ const Invest = () => {
       color: 'from-orange-500 to-yellow-500',
       bg: 'bg-orange-50',
       textColor: 'text-orange-600',
-      risk: 'Baixo',
-      min: 100,
-      max: 1000000
+      risk: 'Baixo'
     },
     { 
       id: 'ETH', 
@@ -58,9 +62,7 @@ const Invest = () => {
       color: 'from-blue-500 to-indigo-500',
       bg: 'bg-blue-50',
       textColor: 'text-blue-600',
-      risk: 'Baixo',
-      min: 50,
-      max: 500000
+      risk: 'Baixo'
     },
     { 
       id: 'USDT', 
@@ -73,9 +75,7 @@ const Invest = () => {
       color: 'from-green-500 to-emerald-500',
       bg: 'bg-green-50',
       textColor: 'text-green-600',
-      risk: 'Muito Baixo',
-      min: 10,
-      max: 1000000
+      risk: 'Muito Baixo'
     },
     { 
       id: 'SOL', 
@@ -88,36 +88,71 @@ const Invest = () => {
       color: 'from-purple-500 to-pink-500',
       bg: 'bg-purple-50',
       textColor: 'text-purple-600',
-      risk: 'Médio',
-      min: 25,
-      max: 250000
+      risk: 'Médio'
     },
   ];
 
+  // Investment Plans with predefined amounts and returns
   const investmentPlans = [
-    { 
-      period: '6', 
-      label: '6 Horas', 
-      return: 2.5, 
-      icon: Clock,
-      color: 'from-blue-500 to-indigo-500',
-      description: 'Crescimento de curto prazo'
+    {
+      id: 'starter',
+      name: 'Plano Starter',
+      icon: Star,
+      minAmount: 100,
+      maxAmount: 500,
+      returnRate: 5,
+      period: '7 dias',
+      description: 'Ideal para iniciantes',
+      features: ['Retorno garantido', 'Suporte básico', 'Saque diário'],
+      color: 'from-blue-500 to-cyan-500',
+      bg: 'bg-blue-50',
+      borderColor: 'border-blue-200',
+      popularity: 'Popular'
     },
-    { 
-      period: '8', 
-      label: '8 Horas', 
-      return: 8.0, 
+    {
+      id: 'growth',
+      name: 'Plano Growth',
       icon: TrendingUp,
+      minAmount: 501,
+      maxAmount: 2000,
+      returnRate: 12,
+      period: '14 dias',
+      description: 'Crescimento acelerado',
+      features: ['Retorno premium', 'Suporte prioritário', 'Saque flexível', 'Bônus de indicação'],
       color: 'from-purple-500 to-pink-500',
-      description: 'Ganhos de médio prazo'
+      bg: 'bg-purple-50',
+      borderColor: 'border-purple-200',
+      popularity: 'Mais Escolhido'
     },
-    { 
-      period: '24', 
-      label: '24 Horas', 
-      return: 17.5, 
-      icon: Award,
+    {
+      id: 'premium',
+      name: 'Plano Premium',
+      icon: Crown,
+      minAmount: 2001,
+      maxAmount: 10000,
+      returnRate: 20,
+      period: '30 dias',
+      description: 'Máximo retorno',
+      features: ['Retorno máximo', 'Suporte VIP 24/7', 'Saque prioritário', 'Cashback mensal', 'Consultoria exclusiva'],
       color: 'from-orange-500 to-red-500',
-      description: 'Retornos máximos'
+      bg: 'bg-orange-50',
+      borderColor: 'border-orange-200',
+      popularity: 'VIP'
+    },
+    {
+      id: 'enterprise',
+      name: 'Plano Enterprise',
+      icon: Rocket,
+      minAmount: 10001,
+      maxAmount: 100000,
+      returnRate: 30,
+      period: '45 dias',
+      description: 'Para grandes investidores',
+      features: ['Retorno exclusivo', 'Gerente dedicado', 'Saque instantâneo', 'Eventos exclusivos', 'Yield farming avançado'],
+      color: 'from-green-500 to-emerald-500',
+      bg: 'bg-green-50',
+      borderColor: 'border-green-200',
+      popularity: 'Limitado'
     },
   ];
 
@@ -128,16 +163,25 @@ const Invest = () => {
     SOL: 'solana_wallet_address_demo_123456789',
   };
 
+  const selectedAssetData = assets.find(a => a.id === selectedAsset);
+  const selectedPlan = investmentPlans.find(p => p.id === selectedPlanId);
+
   const calculateProjectedReturn = () => {
-    const amount = parseFloat(investmentAmount) || 0;
-    const selectedPlan = investmentPlans.find(p => p.period === selectedPeriod);
-    const multiplier = selectedPlan ? selectedPlan.return / 100 : 0;
+    if (!selectedPlan) return 0;
+    const amount = selectedPlan.minAmount;
+    const multiplier = selectedPlan.returnRate / 100;
     return amount * multiplier;
   };
 
+  const totalAmount = selectedPlan ? selectedPlan.minAmount + calculateProjectedReturn() : 0;
+
+  const handleSelectPlan = (planId) => {
+    setSelectedPlanId(planId);
+  };
+
   const handleInvestNow = () => {
-    if (!investmentAmount || parseFloat(investmentAmount) < 100) {
-      toast.error('O valor mínimo de investimento é $100');
+    if (!selectedPlanId) {
+      toast.error('Por favor, selecione um plano de investimento');
       return;
     }
     setIsModalOpen(true);
@@ -160,21 +204,18 @@ const Invest = () => {
       setIsLoading(false);
       toast.success("Solicitação enviada! A carteira será atualizada em breve.");
       setIsModalOpen(false);
-      setInvestmentAmount('');
+      setSelectedPlanId(null);
       setAgreeToTerms(false);
     }, 2000);
   };
 
-  const selectedAssetData = assets.find(a => a.id === selectedAsset);
-  const selectedPlanData = investmentPlans.find(p => p.period === selectedPeriod);
   const walletAddress = walletAddresses[selectedAsset];
   const projectedReturn = calculateProjectedReturn();
-  const totalAmount = parseFloat(investmentAmount || 0) + projectedReturn;
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'BRL',
       minimumFractionDigits: 2,
     }).format(value);
   };
@@ -187,7 +228,7 @@ const Invest = () => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Começar a Investir
+                Planos de Investimento
               </h1>
             </div>
             <div className="flex items-center space-x-3">
@@ -215,7 +256,7 @@ const Invest = () => {
           <div className="relative flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold mb-2">Comece a Ganhar Hoje</h2>
-              <p className="text-white/80">Escolha sua estratégia de investimento e veja seu portfólio crescer</p>
+              <p className="text-white/80">Escolha o plano ideal para seu perfil de investidor</p>
             </div>
             <Sparkles className="w-12 h-12 text-white/30" />
           </div>
@@ -240,7 +281,7 @@ const Invest = () => {
                     <span className={`text-2xl ${asset.textColor}`}>{asset.icon}</span>
                   </div>
                   <p className="font-semibold text-sm">{asset.name}</p>
-                  <p className="text-xs text-gray-500 mt-1">${asset.price.toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-1">{formatCurrency(asset.price)}</p>
                   <p className={`text-xs font-medium mt-1 ${
                     asset.change >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
@@ -255,236 +296,169 @@ const Invest = () => {
           </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Investment Form */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6">Detalhes do Investimento</h2>
-              
-              <div className="space-y-6">
-                {/* Amount Input */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Valor do Investimento
-                    </label>
-                    <span className="text-xs text-gray-500">
-                      Mín: ${selectedAssetData?.min} | Máx: ${selectedAssetData?.max}
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
-                      $
-                    </span>
-                    <input
-                      type="number"
-                      value={investmentAmount}
-                      onChange={(e) => setInvestmentAmount(e.target.value)}
-                      className="w-full pl-8 pr-24 py-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-lg"
-                      placeholder="0,00"
-                      min={selectedAssetData?.min}
-                      max={selectedAssetData?.max}
-                      step="10"
-                    />
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => setInvestmentAmount(selectedAssetData?.max)}
-                        className="px-2 py-1 bg-gray-100 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors"
-                      >
-                        MÁX
-                      </button>
-                      <span className="text-sm text-gray-500">USD</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Investment Period */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Período de Investimento
-                  </label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {investmentPlans.map((plan) => {
-                      const Icon = plan.icon;
-                      return (
-                        <button
-                          key={plan.period}
-                          onClick={() => setSelectedPeriod(plan.period)}
-                          className={`relative p-4 rounded-xl border-2 transition-all duration-300 text-center overflow-hidden group
-                            ${selectedPeriod === plan.period 
-                              ? `border-${plan.color.split('-')[1]}-500 bg-gradient-to-br ${plan.color} bg-opacity-10` 
-                              : 'border-gray-200 hover:border-gray-300'}`}
-                        >
-                          <div className={`absolute inset-0 bg-gradient-to-br ${plan.color} opacity-0 group-hover:opacity-5 transition-opacity`} />
-                          <div className="relative">
-                            <Icon className={`w-6 h-6 mx-auto mb-2 ${
-                              selectedPeriod === plan.period ? `text-${plan.color.split('-')[1]}-600` : 'text-gray-600'
-                            }`} />
-                            <p className="font-semibold text-sm">{plan.label}</p>
-                            <p className="text-xs text-green-600 font-medium mt-1">+{plan.return}%</p>
-                            <p className="text-xs text-gray-400 mt-1">{plan.description}</p>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Projected Returns */}
-                <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">Retornos Projetados</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Valor do Investimento:</span>
-                      <span className="font-semibold text-gray-900">
-                        {formatCurrency(parseFloat(investmentAmount || 0))}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Retorno Esperado ({selectedPlanData?.return}%):</span>
-                      <span className="font-semibold text-green-600">
-                        +{formatCurrency(projectedReturn)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                      <span className="font-medium text-gray-900">Valor Total Após {selectedPlanData?.label}:</span>
-                      <span className="text-xl font-bold text-blue-600">
-                        {formatCurrency(totalAmount)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* APY Comparison */}
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Rendimento Percentual Anual (APY)</span>
-                      <span className="font-semibold text-green-600">{selectedAssetData?.apy}%</span>
-                    </div>
-                    <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full"
-                        style={{ width: `${(selectedAssetData?.apy || 0) * 5}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex space-x-3">
-                  <button
-                    onClick={handleInvestNow}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-4 px-6 rounded-xl transition-all hover:scale-105 hover:shadow-xl"
-                  >
-                    Investir Agora
-                  </button>
-                  <button className="px-6 py-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                    <Zap className="w-5 h-5 text-gray-600" />
-                  </button>
-                </div>
-
-                {/* Security Note */}
-                <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-xl">
-                  <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-blue-800">Investimento Seguro</p>
-                    <p className="text-xs text-blue-700 mt-1">
-                      Seu investimento é protegido por contratos inteligentes auditados pelas principais empresas de segurança.
-                    </p>
-                  </div>
-                </div>
-              </div>
+        {/* Investment Plans Cards */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Planos de Investimento</h2>
+              <p className="text-gray-600 mt-1">Escolha o plano que melhor se adequa aos seus objetivos</p>
+            </div>
+            <div className="hidden md:flex items-center space-x-2">
+              <span className="text-sm text-gray-500">Retorno garantido</span>
+              <Shield className="w-4 h-4 text-green-600" />
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Asset Details */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-              <h3 className="font-semibold text-gray-900 mb-4">Detalhes do Ativo</h3>
-              {selectedAssetData && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-12 h-12 ${selectedAssetData.bg} rounded-xl flex items-center justify-center`}>
-                        <span className={`text-2xl ${selectedAssetData.textColor}`}>{selectedAssetData.icon}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {investmentPlans.map((plan) => {
+              const Icon = plan.icon;
+              const isSelected = selectedPlanId === plan.id;
+              return (
+                <div
+                  key={plan.id}
+                  className={`relative rounded-2xl transition-all duration-300 cursor-pointer
+                    ${isSelected 
+                      ? `ring-2 ring-blue-500 shadow-2xl transform scale-105` 
+                      : 'hover:shadow-xl hover:transform hover:-translate-y-1'}`}
+                  onClick={() => handleSelectPlan(plan.id)}
+                >
+                  {/* Popular Badge */}
+                  {plan.popularity !== 'Popular' && (
+                    <div className="absolute -top-3 -right-3 z-10">
+                      <div className={`px-3 py-1 text-xs font-bold text-white rounded-full bg-gradient-to-r ${plan.color} shadow-lg`}>
+                        {plan.popularity}
                       </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">{selectedAssetData.name}</p>
-                        <p className="text-sm text-gray-500">{selectedAssetData.symbol}</p>
+                    </div>
+                  )}
+                  
+                  <div className={`bg-white rounded-2xl overflow-hidden border-2 ${isSelected ? plan.borderColor : 'border-gray-100'}`}>
+                    {/* Header */}
+                    <div className={`p-6 bg-gradient-to-br ${plan.color} text-white`}>
+                      <div className="flex items-center justify-between mb-4">
+                        <Icon className="w-8 h-8 text-white/90" />
+                        <span className="text-xs font-medium bg-white/20 px-2 py-1 rounded-full">
+                          {plan.period}
+                        </span>
                       </div>
+                      <h3 className="text-xl font-bold mb-1">{plan.name}</h3>
+                      <p className="text-white/80 text-sm">{plan.description}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-gray-900">{formatCurrency(selectedAssetData.price)}</p>
-                      <p className={`text-sm font-medium ${
-                        selectedAssetData.change >= 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {selectedAssetData.change >= 0 ? '+' : ''}{selectedAssetData.change}%
-                      </p>
+
+                    {/* Body */}
+                    <div className="p-6">
+                      {/* Price */}
+                      <div className="mb-4">
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-3xl font-bold text-gray-900">
+                            {formatCurrency(plan.minAmount)}
+                          </span>
+                          <span className="text-sm text-gray-500">mínimo</span>
+                        </div>
+                        <div className="flex items-baseline justify-between mt-1">
+                          <span className="text-2xl font-bold text-green-600">
+                            +{plan.returnRate}%
+                          </span>
+                          <span className="text-sm text-gray-500">retorno</span>
+                        </div>
+                      </div>
+
+                      {/* Features */}
+                      <div className="space-y-2 mb-6">
+                        {plan.features.map((feature, idx) => (
+                          <div key={idx} className="flex items-center text-sm">
+                            <Check className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
+                            <span className="text-gray-600">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Max Amount */}
+                      <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Valor máximo:</span>
+                          <span className="font-semibold text-gray-900">{formatCurrency(plan.maxAmount)}</span>
+                        </div>
+                      </div>
+
+                      {/* Select Button */}
+                      <button
+                        onClick={() => handleSelectPlan(plan.id)}
+                        className={`w-full py-3 rounded-xl font-semibold transition-all duration-300
+                          ${isSelected 
+                            ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg' 
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                      >
+                        {isSelected ? 'Plano Selecionado ✓' : 'Selecionar Plano'}
+                      </button>
                     </div>
                   </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-gray-50 p-3 rounded-xl">
-                      <p className="text-xs text-gray-500 mb-1">APY</p>
-                      <p className="text-lg font-semibold text-blue-600">{selectedAssetData.apy}%</p>
-                    </div>
-                    <div className="bg-gray-50 p-3 rounded-xl">
-                      <p className="text-xs text-gray-500 mb-1">Nível de Risco</p>
-                      <p className="text-lg font-semibold text-gray-900">{selectedAssetData.risk}</p>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-4">
-                    <h4 className="text-sm font-medium mb-2">Por que investir em {selectedAssetData.name}?</h4>
-                    <ul className="space-y-2 text-sm text-gray-600">
-                      <li className="flex items-center">
-                        <Check className="w-4 h-4 text-green-600 mr-2" />
-                        Retornos históricos de {selectedAssetData.apy}% APY
-                      </li>
-                      <li className="flex items-center">
-                        <Check className="w-4 h-4 text-green-600 mr-2" />
-                        Investimento mínimo baixo
-                      </li>
-                      <li className="flex items-center">
-                        <Check className="w-4 h-4 text-green-600 mr-2" />
-                        Totalmente segurado e auditado
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Quick Stats */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-              <h3 className="font-semibold text-gray-900 mb-4">Estatísticas Rápidas</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Investidores Ativos</span>
-                  <span className="font-semibold">12.345</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Total Investido</span>
-                  <span className="font-semibold">$124,5M</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Retorno Médio</span>
-                  <span className="font-semibold text-green-600">+14,2%</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Taxa de Sucesso</span>
-                  <span className="font-semibold">98,5%</span>
-                </div>
+        {/* Selected Plan Summary */}
+        {selectedPlan && (
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl p-6 mb-8">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Plano Selecionado: {selectedPlan.name}</h3>
+                <p className="text-gray-600">Investimento mínimo: {formatCurrency(selectedPlan.minAmount)}</p>
               </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Retorno projetado</p>
+                <p className="text-2xl font-bold text-green-600">+{formatCurrency(projectedReturn)}</p>
+                <p className="text-xs text-gray-500">em {selectedPlan.period}</p>
+              </div>
+              <button
+                onClick={handleInvestNow}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-3 px-8 rounded-xl transition-all hover:scale-105 hover:shadow-xl"
+              >
+                Investir Agora
+              </button>
             </div>
+          </div>
+        )}
 
+        {/* Sidebar - Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">Investidores Ativos</h3>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">12.345</p>
+            <p className="text-sm text-green-600 mt-2">+23% este mês</p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-green-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">Total Investido</h3>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{formatCurrency(124500000)}</p>
+            <p className="text-sm text-green-600 mt-2">+15.3% este mês</p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                <Award className="w-5 h-5 text-purple-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">Taxa de Sucesso</h3>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">98.5%</p>
+            <p className="text-sm text-gray-600 mt-2">Investidores satisfeitos</p>
           </div>
         </div>
 
         {/* Payment Modal */}
-        {isModalOpen && (
+        {isModalOpen && selectedPlan && (
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={() => setIsModalOpen(false)} />
 
@@ -512,8 +486,12 @@ const Invest = () => {
                   <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-6">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
+                        <p className="text-xs text-gray-500 mb-1">Plano</p>
+                        <p className="text-lg font-bold text-gray-900">{selectedPlan.name}</p>
+                      </div>
+                      <div>
                         <p className="text-xs text-gray-500 mb-1">Valor</p>
-                        <p className="text-xl font-bold text-gray-900">{formatCurrency(parseFloat(investmentAmount))}</p>
+                        <p className="text-xl font-bold text-gray-900">{formatCurrency(selectedPlan.minAmount)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 mb-1">Ativo</p>
@@ -521,12 +499,8 @@ const Invest = () => {
                           <div className={`w-6 h-6 ${selectedAssetData?.bg} rounded-lg flex items-center justify-center mr-2`}>
                             <span className={`text-xs font-bold ${selectedAssetData?.textColor}`}>{selectedAssetData?.icon}</span>
                           </div>
-                          <p className="text-xl font-bold text-gray-900">{selectedAsset}</p>
+                          <p className="text-lg font-bold text-gray-900">{selectedAsset}</p>
                         </div>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Período</p>
-                        <p className="text-lg font-semibold text-gray-900">{selectedPlanData?.label}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 mb-1">Retorno Estimado</p>
@@ -568,7 +542,7 @@ const Invest = () => {
                     </div>
                     <p className="text-xs text-gray-500 mt-2 flex items-center">
                       <AlertCircle className="w-3 h-3 mr-1" />
-                      Envie apenas {selectedAsset} para este endereço
+                      Envie exatamente {formatCurrency(selectedPlan.minAmount)} em {selectedAsset}
                     </p>
                   </div>
 
@@ -591,9 +565,10 @@ const Invest = () => {
                     </h4>
                     <ol className="text-sm text-yellow-700 space-y-2 list-decimal list-inside">
                       <li>Copie o endereço da carteira acima</li>
-                      <li>Envie exatamente {formatCurrency(parseFloat(investmentAmount))} em {selectedAsset}</li>
+                      <li>Envie exatamente {formatCurrency(selectedPlan.minAmount)} em {selectedAsset}</li>
                       <li>Aguarde 3 confirmações na blockchain</li>
                       <li>Seu investimento será creditado automaticamente</li>
+                      <li>Os rendimentos começarão após a confirmação</li>
                     </ol>
                   </div>
 
@@ -607,8 +582,9 @@ const Invest = () => {
                       className="mt-1 mr-3 w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                     />
                     <label htmlFor="terms" className="text-sm text-gray-600">
-                      Confirmo que enviei o valor exato e concordo com os 
-                      <a href="#" className="text-blue-600 hover:text-blue-700 ml-1">termos</a>.
+                      Confirmo que li e concordo com os 
+                      <a href="#" className="text-blue-600 hover:text-blue-700 mx-1">termos e condições</a>
+                      do plano {selectedPlan.name}.
                     </label>
                   </div>
 
@@ -631,7 +607,7 @@ const Invest = () => {
                           Processando...
                         </span>
                       ) : (
-                        'Confirmar Pagamento'
+                        'Confirmar Investimento'
                       )}
                     </button>
                   </div>
