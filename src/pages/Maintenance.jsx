@@ -181,7 +181,7 @@ const Maintenance = () => {
           <p className="description">
             Our website is currently under maintenance to improve
             performance, security, and user experience.
-            Please check back shortly.
+            Please check back shortly..
           </p>
 
           <div className="status-box">
