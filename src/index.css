@@ -390,14 +390,35 @@
   animation: shimmer 2s infinite;
 }
 
-/* In index.css or App.css */
-#google_translate_element,
+/* --- Google Translate bar removal (stronger) --- */
 .goog-te-banner-frame,
-.goog-te-menu-value,
-.skiptranslate,
-.goog-te-gadget {
+.goog-te-banner-frame.skiptranslate,
+#goog-gt-tt,
+.goog-tooltip,
+.goog-tooltip:hover {
   display: none !important;
 }
+
 body {
-  top: 0 !important;
+  top: 0px !important;
+  margin-top: 0px !important;
+  position: static !important;
+}
+
+/* Remove any iframe Google Translate injects */
+.translate.google.com {
+  display: none !important;
+}
+#translate.google.com {
+  display: none !important;
+}
+
+iframe[src*="translate.google.com"] {
+  display: none !important;
+}
+
+/* Hide the translation suggestion bubble */
+.goog-text-highlight {
+  background: none !important;
+  box-shadow: none !important;
 }

@@ -1,9 +1,12 @@
 // src/pages/Home.jsx
 import React from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, TrendingUp, Shield, Globe, Bitcoin, Zap, BarChart3, Users, Award, Activity } from 'lucide-react';
-
+import LiveTradingChart from '../components/LiveTradingChart';
+import BinanceWebSocket from '../utils/binanceWebSocket';
 const Home = () => {
+  const [selectedChartSymbol, setSelectedChartSymbol] = useState('BTCUSDT');
   const stats = [
     { label: 'Volume 24h', value: '$2.4B', change: '+12.5%', icon: Activity },
     { label: 'Usuários Ativos', value: '125K+', change: '+8.2%', icon: Users },
@@ -146,6 +149,14 @@ const Home = () => {
               >
                 Entrar
               </Link>
+            </div>
+
+            {/* LIVE TRADING CHART */}
+            <div className="mb-8">
+              <LiveTradingChart 
+                symbol={selectedChartSymbol}
+                interval="1h"
+              />
             </div>
 
             {/* Floating stats */}

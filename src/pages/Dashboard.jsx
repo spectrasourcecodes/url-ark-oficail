@@ -24,7 +24,7 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
-// import LiveTradingChart from '../components/LiveTradingChart';
+import LiveTradingChart from '../components/LiveTradingChart';
 import BinanceWebSocket from '../utils/binanceWebSocket';
 import axiosInstance from '../utils/axios';
 import { toast } from 'react-toastify';
@@ -580,12 +580,12 @@ const Dashboard = () => {
         </div>
 
         {/* LIVE TRADING CHART */}
-        {/* <div className="mb-8">
+        <div className="mb-8">
           <LiveTradingChart 
             symbol={selectedChartSymbol}
             interval="1h"
           />
-        </div> */}
+        </div>
 
         {/* Holdings and Stats Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

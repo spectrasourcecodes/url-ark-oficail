@@ -1,285 +1,246 @@
-// src/components/LiveTradingChart.jsx
-import React, { useEffect, useRef, useState } from 'react';
-import { Maximize2, Minimize2, RefreshCw, Settings, Download } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Filler,
+  Legend,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+import { RefreshCw, AlertCircle } from 'lucide-react';
+import BinanceWebSocket from '../utils/binanceWebSocket';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Filler,
+  Legend
+);
 
 const LiveTradingChart = ({ symbol = 'BTCUSDT', interval = '1h' }) => {
-  const chartContainerRef = useRef(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedInterval, setSelectedInterval] = useState(interval);
-  const [selectedSymbol, setSelectedSymbol] = useState(symbol);
+  const [chartData, setChartData] = useState({
+    labels: [],
+    prices: [],
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const wsRef = useRef(null);
+  const chartRef = useRef(null);
 
-  // Available trading pairs
-  const symbols = [
-    { id: 'BTCUSDT', name: 'BTC/USDT', icon: '₿' },
-    { id: 'ETHUSDT', name: 'ETH/USDT', icon: 'Ξ' },
-    { id: 'BNBUSDT', name: 'BNB/USDT', icon: 'BNB' },
-    { id: 'SOLUSDT', name: 'SOL/USDT', icon: 'SOL' },
-    { id: 'ADAUSDT', name: 'ADA/USDT', icon: 'ADA' },
-    { id: 'DOGEUSDT', name: 'DOGE/USDT', icon: 'Ð' },
-  ];
+  // Map interval to Binance kline interval
+  const getBinanceInterval = (interval) => {
+    const map = {
+      '1m': '1m',
+      '5m': '5m',
+      '15m': '15m',
+      '1h': '1h',
+      '4h': '4h',
+      '1d': '1d',
+      '1w': '1w',
+      '1M': '1M',
+    };
+    return map[interval] || '1h';
+  };
 
-  // Available time intervals
-  const intervals = [
-    { id: '1m', name: '1m' },
-    { id: '5m', name: '5m' },
-    { id: '15m', name: '15m' },
-    { id: '30m', name: '30m' },
-    { id: '1h', name: '1h' },
-    { id: '4h', name: '4h' },
-    { id: '1d', name: '1D' },
-    { id: '1w', name: '1W' },
-  ];
+  // Fetch historical klines
+  const fetchHistorical = async (symbol, interval) => {
+    const binanceInterval = getBinanceInterval(interval);
+    const limit = 100;
+    const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${binanceInterval}&limit=${limit}`;
 
-  // Load TradingView widget
-  useEffect(() => {
-    // Load TradingView script if not already loaded
-    if (!document.getElementById('tradingview-script')) {
-      const script = document.createElement('script');
-      script.id = 'tradingview-script';
-      script.src = 'https://s3.tradingview.com/tv.js';
-      script.async = true;
-      script.onload = initChart;
-      document.body.appendChild(script);
-    } else {
-      initChart();
-    }
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch historical data');
+      const data = await res.json();
 
-    function initChart() {
-      if (!window.TradingView || !chartContainerRef.current) return;
-
-      // Clear previous widget
-      chartContainerRef.current.innerHTML = '';
-
-      // Create new TradingView widget with Binance data
-      new window.TradingView.widget({
-        // Container
-        container: chartContainerRef.current,
-        width: '100%',
-        height: isFullscreen ? '100%' : '500px',
-        
-        // Symbol and data
-        symbol: `BINANCE:${selectedSymbol}`,
-        interval: selectedInterval,
-        timezone: 'exchange',
-        theme: 'dark',
-        style: '1', // Candlestick style
-        locale: 'en',
-        toolbar_bg: '#f1f3f6',
-        enable_publishing: false,
-        hide_top_toolbar: false,
-        hide_legend: false,
-        save_image: true,
-        
-        // Data feed
-        datafeed: new window.TradingView.UDFCompatibleDatafeed(
-          `https://demo_feed.tradingview.com/v5/`
-        ),
-        
-        // Chart settings
-        studies: [
-          'RSI@tv-basicstudies',
-          'MACD@tv-basicstudies',
-          'MASimple@tv-basicstudies'
-        ],
-        
-        // Appearance
-        backgroundColor: '#0B0F1C',
-        gridColor: '#1E2635',
-        textColor: '#D1D4DC',
-        
-        // Features
-        enabled_features: [
-          'study_templates',
-          'create_volume_indicator',
-          'volume_force_overlay'
-        ],
-        disabled_features: [
-          'use_localstorage_for_settings',
-          'header_widget_dom_node',
-          'left_toolbar'
-        ],
-        
-        // Chart style overrides
-        overrides: {
-          'mainSeriesProperties.candleStyle.upColor': '#22c55e',
-          'mainSeriesProperties.candleStyle.downColor': '#ef4444',
-          'mainSeriesProperties.candleStyle.wickUpColor': '#22c55e',
-          'mainSeriesProperties.candleStyle.wickDownColor': '#ef4444',
-          'mainSeriesProperties.candleStyle.borderUpColor': '#22c55e',
-          'mainSeriesProperties.candleStyle.borderDownColor': '#ef4444',
-        },
-        
-        // Loading callback
-        loading_screen: {
-          backgroundColor: '#0B0F1C',
-          foregroundColor: '#3B82F6'
-        },
-        
-        onChartReady: () => {
-          setIsLoading(false);
-        }
+      const labels = data.map((item) => {
+        const date = new Date(item[0]);
+        return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       });
-    }
+      const prices = data.map((item) => parseFloat(item[4])); // closing price
 
-    return () => {
-      // Clean up widget on unmount
-      if (chartContainerRef.current) {
-        chartContainerRef.current.innerHTML = '';
+      return { labels, prices };
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  // Load historical data and start WebSocket
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    setError(null);
+
+    const loadData = async () => {
+      try {
+        const { labels, prices } = await fetchHistorical(symbol, interval);
+        if (!isMounted) return;
+
+        setChartData({ labels, prices });
+        setLoading(false);
+      } catch (err) {
+        if (isMounted) {
+          setError('Failed to load chart data');
+          setLoading(false);
+        }
       }
     };
-  }, [selectedSymbol, selectedInterval, isFullscreen]);
 
-  // Handle symbol change
-  const handleSymbolChange = (newSymbol) => {
-    setIsLoading(true);
-    setSelectedSymbol(newSymbol);
-  };
+    loadData();
 
-  // Handle interval change
-  const handleIntervalChange = (newInterval) => {
-    setIsLoading(true);
-    setSelectedInterval(newInterval);
-  };
+    // WebSocket connection
+    const wsSymbol = symbol.toLowerCase();
+    const ws = new BinanceWebSocket(wsSymbol, (data) => {
+      if (!isMounted) return;
+      // data.close is the current price
+      const newPrice = parseFloat(data.close);
+      const newTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-  // Toggle fullscreen
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
-
-  // Export chart as image
-  const exportChart = () => {
-    // TradingView has built-in export functionality
-    const widget = document.querySelector('.tradingview-widget-container iframe');
-    if (widget) {
-      // Trigger TradingView's save image
-      const event = new KeyboardEvent('keydown', {
-        key: 's',
-        ctrlKey: true,
-        shiftKey: true
+      setChartData((prev) => {
+        const labels = [...prev.labels, newTime];
+        const prices = [...prev.prices, newPrice];
+        // Keep only last 100 points
+        if (labels.length > 100) {
+          labels.shift();
+          prices.shift();
+        }
+        return { labels, prices };
       });
-      widget.contentWindow.dispatchEvent(event);
-    }
+    });
+
+    ws.connect();
+    wsRef.current = ws;
+
+    return () => {
+      isMounted = false;
+      if (wsRef.current) {
+        wsRef.current.disconnect();
+      }
+    };
+  }, [symbol, interval]);
+
+  // Chart options
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        cornerRadius: 8,
+        padding: 12,
+        callbacks: {
+          label: (context) => {
+            const value = context.parsed.y;
+            return `R$ ${value.toFixed(2)}`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          maxRotation: 0,
+          autoSkip: true,
+          maxTicksLimit: 20,
+        },
+      },
+      y: {
+        grid: {
+          color: 'rgba(200,200,200,0.2)',
+        },
+        ticks: {
+          callback: (value) => `R$ ${value.toFixed(2)}`,
+        },
+      },
+    },
+    elements: {
+      point: {
+        radius: 0,
+        hitRadius: 6,
+        hoverRadius: 4,
+      },
+      line: {
+        tension: 0.3,
+        borderWidth: 2,
+      },
+    },
   };
 
-  return (
-    <div className={`bg-[#0B0F1C] rounded-3xl border border-gray-800 overflow-hidden transition-all duration-300 ${
-      isFullscreen ? 'fixed inset-4 z-50' : ''
-    }`}>
-      {/* Chart Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-        <div className="flex items-center space-x-6">
-          {/* Symbol Selector */}
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-400">Pair:</span>
-            <select
-              value={selectedSymbol}
-              onChange={(e) => handleSymbolChange(e.target.value)}
-              className="bg-[#1E2635] text-white text-sm rounded-xl px-4 py-2 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {symbols.map((sym) => (
-                <option key={sym.id} value={sym.id}>
-                  {sym.name}
-                </option>
-              ))}
-            </select>
-          </div>
+  const data = {
+    labels: chartData.labels,
+    datasets: [
+      {
+        label: symbol,
+        data: chartData.prices,
+        borderColor: '#3b82f6',
+        backgroundColor: (context) => {
+          const chart = context.chart;
+          const { ctx, chartArea } = chart;
+          if (!chartArea) return 'rgba(59,130,246,0)';
+          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          gradient.addColorStop(0, 'rgba(59,130,246,0.3)');
+          gradient.addColorStop(1, 'rgba(59,130,246,0)');
+          return gradient;
+        },
+        fill: true,
+      },
+    ],
+  };
 
-          {/* Interval Selector */}
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-400">Interval:</span>
-            <div className="flex bg-[#1E2635] rounded-xl p-1">
-              {intervals.map((int) => (
-                <button
-                  key={int.id}
-                  onClick={() => handleIntervalChange(int.id)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                    selectedInterval === int.id
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                  }`}
-                >
-                  {int.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Loading Indicator */}
-          {isLoading && (
-            <div className="flex items-center space-x-2">
-              <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
-              <span className="text-xs text-gray-400">Loading chart...</span>
-            </div>
-          )}
-        </div>
-
-        {/* Chart Controls */}
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={exportChart}
-            className="p-2 hover:bg-[#1E2635] rounded-lg transition-colors"
-            title="Export as image"
-          >
-            <Download className="w-5 h-5 text-gray-400" />
-          </button>
-          <button
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-2 hover:bg-[#1E2635] rounded-lg transition-colors"
-            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-          >
-            {isFullscreen ? (
-              <Minimize2 className="w-5 h-5 text-gray-400" />
-            ) : (
-              <Maximize2 className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
+  if (loading) {
+    return (
+      <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
+        <div className="flex items-center space-x-2 text-gray-500">
+          <RefreshCw className="w-5 h-5 animate-spin" />
+          <span>Carregando gráfico...</span>
         </div>
       </div>
+    );
+  }
 
-      {/* Chart Container */}
-      <div 
-        ref={chartContainerRef} 
-        className="tradingview-widget-container"
-        style={{ height: isFullscreen ? 'calc(100% - 73px)' : '500px' }}
-      />
-
-      {/* Real-time Price Ticker */}
-      <div className="border-t border-gray-800 px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-400">Last Price:</span>
-              <span className="text-lg font-bold text-white" id="last-price">
-                ---
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-400">24h Change:</span>
-              <span className="text-sm font-semibold text-green-500" id="price-change">
-                ---
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-400">24h High:</span>
-              <span className="text-sm text-white" id="high-price">
-                ---
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-400">24h Low:</span>
-              <span className="text-sm text-white" id="low-price">
-                ---
-              </span>
-            </div>
-          </div>
-
-          {/* WebSocket Connection Status */}
-          <div className="flex items-center space-x-2">
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            <span className="text-xs text-gray-400">Live</span>
-          </div>
+  if (error) {
+    return (
+      <div className="h-64 flex items-center justify-center bg-red-50 rounded-xl">
+        <div className="flex items-center space-x-2 text-red-600">
+          <AlertCircle className="w-5 h-5" />
+          <span>{error}</span>
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-semibold text-gray-700">{symbol}</span>
+          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+            {interval}
+          </span>
+        </div>
+        <div className="flex items-center space-x-1">
+          <span className="text-xs text-gray-500">Atualizado em tempo real</span>
+          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+        </div>
+      </div>
+      <div className="h-64 relative">
+        <Line ref={chartRef} data={data} options={options} />
       </div>
     </div>
   );
