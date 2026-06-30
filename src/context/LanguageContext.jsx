@@ -1,9 +1,7 @@
 import React, { createContext, useState, useContext } from 'react';
 
-// Translation dictionary
 const translations = {
   en: {
-    // Navigation
     dashboard: 'Dashboard',
     market: 'Market',
     invest: 'Invest',
@@ -33,7 +31,7 @@ const translations = {
   }
 };
 
-const LanguageContext = createContext();
+export const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState(() => {
