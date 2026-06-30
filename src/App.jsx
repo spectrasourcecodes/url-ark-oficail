@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
@@ -28,9 +27,12 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminProfile from './pages/admin/AdminProfile';
 import KycReceipts from './pages/admin/KycReceipts';
 
-// maintenance page
+// Maintenance page
 import Maintenance from "./pages/Maintenance";
-// set maintenance
+
+// Language Context
+import { LanguageProvider } from './context/LanguageContext';
+
 const maintenanceMode = false;
 
 // Protected Route Components
@@ -48,37 +50,28 @@ function App() {
   const [kycStatus, setKycStatus] = useState('pending');
   const location = useLocation();
 
-  // Check authentication status on mount and route change
   useEffect(() => {
     const token = localStorage.getItem('token');
     setIsAuthenticated(!!token);
   }, [location]);
 
-  // Determine if current route is admin route
   const isAdminRoute = location.pathname.startsWith('/admin');
-  
-  // Determine which footer to show based on route
   const showFullFooter = location.pathname === '/' && !isAdminRoute;
   const showSimpleFooter = !['/', '/login', '/register', '/admin/login'].includes(location.pathname) && !isAdminRoute;
   const showNoFooter = ['/login', '/register', '/admin/login'].includes(location.pathname) || isAdminRoute;
 
   return (
-    <>
+    <LanguageProvider>
       <div className="min-h-screen flex flex-col bg-gray-50">
-        {/* Only show Navbar for non-admin routes */}
         {!isAdminRoute && <Navbar isAuthenticated={isAuthenticated} />}
         
         <main className="flex-grow pt-16 md:pt-0">
-
           {maintenanceMode ? (
-
             <Routes>
               <Route path="/maintenance" element={<Maintenance />} />
               <Route path="*" element={<Navigate to="/maintenance" replace />} />
             </Routes>
-
           ) : (
-
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
@@ -95,7 +88,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-
               <Route
                 path="/invest"
                 element={
@@ -104,7 +96,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-
               <Route
                 path="/withdraw"
                 element={
@@ -113,19 +104,14 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-
               <Route
                 path="/kyc"
                 element={
                   <ProtectedRoute isAllowed={isAuthenticated} redirectTo="/login">
-                    <KYC
-                      kycStatus={kycStatus}
-                      setKycStatus={setKycStatus}
-                    />
+                    <KYC kycStatus={kycStatus} setKycStatus={setKycStatus} />
                   </ProtectedRoute>
                 }
               />
-
               <Route
                 path="/profile"
                 element={
@@ -137,7 +123,6 @@ function App() {
 
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
-
               <Route
                 path="/admin/dashboard"
                 element={
@@ -146,7 +131,6 @@ function App() {
                   </AdminRoute>
                 }
               />
-
               <Route
                 path="/admin/users"
                 element={
@@ -155,7 +139,6 @@ function App() {
                   </AdminRoute>
                 }
               />
-
               <Route
                 path="/admin/profile"
                 element={
@@ -164,7 +147,6 @@ function App() {
                   </AdminRoute>
                 }
               />
-
               <Route
                 path="/admin/kyc-receipts"
                 element={
@@ -177,12 +159,9 @@ function App() {
               {/* Catch all */}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
-
           )}
-
         </main>
         
-        {/* Conditional Footer Rendering - only for non-admin routes */}
         {!isAdminRoute && showFullFooter && <Footer />}
         {!isAdminRoute && showSimpleFooter && <SimpleFooter />}
         
@@ -193,7 +172,7 @@ function App() {
           toastClassName="rounded-xl"
         />
       </div>
-    </>
+    </LanguageProvider>
   );
 }
 

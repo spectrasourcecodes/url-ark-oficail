@@ -389,3 +389,15 @@
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
 }
+
+/* In index.css or App.css */
+#google_translate_element,
+.goog-te-banner-frame,
+.goog-te-menu-value,
+.skiptranslate,
+.goog-te-gadget {
+  display: none !important;
+}
+body {
+  top: 0 !important;
+}
